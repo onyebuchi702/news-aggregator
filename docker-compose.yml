@@ -4,8 +4,11 @@ services:
     build:
       context: .
       target: runner
+      args:
+        - NEXT_PUBLIC_GUARDIAN_API_KEY=${NEXT_PUBLIC_GUARDIAN_API_KEY}
+        - NEXT_PUBLIC_NEWS_API_KEY=${NEXT_PUBLIC_NEWS_API_KEY}
+        - NEXT_PUBLIC_NYT_API_KEY=${NEXT_PUBLIC_NYT_API_KEY}
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_KEY=api_key
