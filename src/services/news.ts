@@ -1,5 +1,6 @@
 import { Article, FilterOptions } from "../types";
-import { apiGuardian, apiNewsApi } from "./api/api";
+import { apiGuardian, apiNewsApi, apiNyTimes } from "./api/api";
+import { GuardianApiResponse, NyTimesResponse, NewsApiResponse } from "@/types";
 
 class NewsAggregatorService {
   async fetchAllNews(filters: FilterOptions): Promise<Article[]> {
@@ -11,6 +12,10 @@ class NewsAggregatorService {
 
     if (filters.sources.includes("newsapi")) {
       promises.push(this.fetchNewsApiArticles(filters));
+    }
+
+    if (filters.sources.includes("nytimes")) {
+      promises.push(this.fetchNYTimesNews(filters));
     }
 
     const results = await Promise.allSettled(promises);
@@ -45,9 +50,9 @@ class NewsAggregatorService {
 
       const path = `/search?${queryParams.toString()}&show-fields=thumbnail,trailText,byline&page-size=50`;
 
-      const response = await apiGuardian.get<any>(path);
+      const { data } = await apiGuardian.get<GuardianApiResponse>(path);
 
-      return response.data.response.results.map((item: any) => ({
+      return data.response.results.map((item: any) => ({
         id: item.id,
         title: item.webTitle,
         description: item.fields?.trailText || "",
@@ -70,16 +75,18 @@ class NewsAggregatorService {
   ): Promise<Article[]> {
     try {
       const queryParams = new URLSearchParams();
-      if (filters.keyword) queryParams.append("q", filters.keyword || "news");
       if (filters.dateFrom) queryParams.append("from", filters.dateFrom);
       if (filters.dateTo) queryParams.append("to", filters.dateTo);
       if (filters.categories.length)
         queryParams.append("category", filters.categories[0]);
 
-      const path = `/everything?${queryParams.toString()}&pageSize=50&language=en`;
-      const response = await apiNewsApi.get<any>(path);
+      queryParams.append("q", filters.keyword || "news");
 
-      return response.articles.map((item: any) => ({
+      const path = `/everything?${queryParams.toString()}&pageSize=50&language=en`;
+
+      const { data } = await apiNewsApi.get<NewsApiResponse>(path);
+
+      return data.articles.map((item: any) => ({
         id: item.url,
         title: item.title,
         description: item.description,
@@ -93,6 +100,44 @@ class NewsAggregatorService {
       }));
     } catch (error) {
       console.error("Error fetching NewsAPI articles:", error);
+      return [];
+    }
+  }
+
+  private async fetchNYTimesNews(filters: FilterOptions): Promise<Article[]> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters.keyword) queryParams.append("q", filters.keyword);
+      if (filters.dateFrom)
+        queryParams.append("begin_date", filters.dateFrom.replace(/-/g, ""));
+      if (filters.dateTo)
+        queryParams.append("end_date", filters.dateTo.replace(/-/g, ""));
+
+      let fq = "";
+      if (filters.categories.length) {
+        fq = filters.categories.map((cat) => `news_desk:(${cat})`).join(" OR ");
+        queryParams.append("fq", fq);
+      }
+
+      const path = `/articlesearch.json?${queryParams.toString()}`;
+      const { data } = await apiNyTimes.get<NyTimesResponse>(path);
+
+      return data.response.docs.map((item: any) => ({
+        id: item._id,
+        title: item.headline.main,
+        description: item.abstract,
+        content: item.lead_paragraph,
+        author: item.byline?.original || "",
+        source: "New York Times",
+        publishedAt: item.pub_date,
+        url: item.web_url,
+        imageUrl: item.multimedia[0]?.url
+          ? `https://www.nytimes.com/${item.multimedia[0].url}`
+          : undefined,
+        category: item.news_desk,
+      }));
+    } catch (error) {
+      console.error("Error fetching NYT news:", error);
       return [];
     }
   }
