@@ -1,5 +1,5 @@
 import { Article, FilterOptions } from "../types";
-import { apiGuardian } from "./api/api";
+import { apiGuardian, apiNewsApi } from "./api/api";
 
 class NewsAggregatorService {
   async fetchAllNews(filters: FilterOptions): Promise<Article[]> {
@@ -7,6 +7,10 @@ class NewsAggregatorService {
 
     if (filters.sources.includes("guardian")) {
       promises.push(this.fetchGuardianNews(filters));
+    }
+
+    if (filters.sources.includes("newsapi")) {
+      promises.push(this.fetchNewsApiArticles(filters));
     }
 
     const results = await Promise.allSettled(promises);
@@ -57,6 +61,38 @@ class NewsAggregatorService {
       }));
     } catch (error) {
       console.error("Error fetching Guardian news:", error);
+      return [];
+    }
+  }
+
+  private async fetchNewsApiArticles(
+    filters: FilterOptions
+  ): Promise<Article[]> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (filters.keyword) queryParams.append("q", filters.keyword || "news");
+      if (filters.dateFrom) queryParams.append("from", filters.dateFrom);
+      if (filters.dateTo) queryParams.append("to", filters.dateTo);
+      if (filters.categories.length)
+        queryParams.append("category", filters.categories[0]);
+
+      const path = `/everything?${queryParams.toString()}&pageSize=50&language=en`;
+      const response = await apiNewsApi.get<any>(path);
+
+      return response.articles.map((item: any) => ({
+        id: item.url,
+        title: item.title,
+        description: item.description,
+        content: item.content,
+        author: item.author,
+        source: item.source.name,
+        publishedAt: item.publishedAt,
+        url: item.url,
+        imageUrl: item.urlToImage,
+        category: "general",
+      }));
+    } catch (error) {
+      console.error("Error fetching NewsAPI articles:", error);
       return [];
     }
   }
