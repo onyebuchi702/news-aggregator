@@ -68,9 +68,9 @@ export interface NyTimesResponse {
         }
       ];
       meta: {
-        hits: 12448;
-        offset: 0;
-        time: 15;
+        hits: number;
+        offset: number;
+        time: number;
       };
     };
   };
