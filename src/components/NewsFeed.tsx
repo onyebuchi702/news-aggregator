@@ -1,37 +1,20 @@
 "use client";
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React from "react";
 import { NewsCard } from "./NewsCard";
 import { SearchBar } from "./SearchBar";
 import { Filters } from "./Filters";
-import { newsService } from "@/services";
-import { FilterOptions } from "@//types";
-
-const FIVE_MINUTES = 5 * 60 * 1000;
+import { FilterOptions } from "@/types";
+import { useFetchNews } from "@/lib";
 
 export const NewsFeed: React.FC = () => {
-  const initialState: FilterOptions = {
-    keyword: "",
-    dateFrom: "",
-    dateTo: "",
-    categories: [],
-    sources: ["guardian", "newsapi", "nytimes"],
-    authors: [],
-  };
-
-  const [filters, setFilters] = useState<FilterOptions>(initialState);
-
   const {
+    setFilters,
     data: articles,
     isLoading,
     error,
     refetch,
-  } = useQuery({
-    queryKey: ["news", filters],
-    queryFn: () => newsService.fetchAllNews(filters),
-    staleTime: FIVE_MINUTES,
-    refetchOnWindowFocus: false,
-  });
+    initialState,
+  } = useFetchNews();
 
   const handleSearch = (query: string) => {
     setFilters((prev) => ({ ...prev, keyword: query }));

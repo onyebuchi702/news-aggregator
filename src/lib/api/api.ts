@@ -1,6 +1,11 @@
 import axios, { AxiosInstance } from "axios";
 import { ApiRequestMethod } from "@/lib";
-import { guardianConfig, newsApiConfig, nyTimesConfig } from "./api.configs";
+import {
+  guardianConfig,
+  newsApiConfig,
+  nyTimesConfig,
+  aggregatorConfig,
+} from "./api.configs";
 
 interface IApi {
   [ApiRequestMethod.GET]: <T>(path: string) => Promise<T>;
@@ -39,3 +44,4 @@ class ApiService implements IApi {
 export const apiGuardian = new ApiService(axios.create(guardianConfig()));
 export const apiNewsApi = new ApiService(axios.create(newsApiConfig()));
 export const apiNyTimes = new ApiService(axios.create(nyTimesConfig()));
+export const apiAggregator = new ApiService(axios.create(aggregatorConfig()));
