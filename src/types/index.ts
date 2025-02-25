@@ -11,12 +11,6 @@ export interface Article {
   category: string;
 }
 
-export interface NewsSource {
-  id: string;
-  name: string;
-  enabled: boolean;
-}
-
 export interface FilterOptions {
   keyword: string;
   dateFrom: string;

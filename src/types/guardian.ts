@@ -1,4 +1,4 @@
-interface GuardianFieldsResult {
+export interface GuardianFieldsResult {
   apiUrl: string;
   id: string;
   type: "article";

@@ -1,25 +1,32 @@
 import { Article, FilterOptions } from "../types";
 import { apiGuardian, apiNewsApi, apiNyTimes } from "./api/api";
-import { GuardianApiResponse, NyTimesResponse, NewsApiResponse } from "@/types";
+import {
+  GuardianApiResponse,
+  NyTimesResponse,
+  NewsApiResponse,
+  GuardianFieldsResult,
+  NewsApiArticle,
+  NyTimesResponseDoc,
+} from "@/types";
 
 class NewsAggregatorService {
   async fetchAllNews(filters: FilterOptions): Promise<Article[]> {
     const promises: Promise<Article[]>[] = [];
 
-    if (filters.sources.includes("guardian")) {
+    if (filters.sources.length === 0 || filters.sources.includes("guardian")) {
       promises.push(this.fetchGuardianNews(filters));
     }
 
-    if (filters.sources.includes("newsapi")) {
+    if (filters.sources.length === 0 || filters.sources.includes("newsapi")) {
       promises.push(this.fetchNewsApiArticles(filters));
     }
 
-    if (filters.sources.includes("nytimes")) {
+    if (filters.sources.length === 0 || filters.sources.includes("nytimes")) {
       promises.push(this.fetchNYTimesNews(filters));
     }
 
     const results = await Promise.allSettled(promises);
-    const articles: Article[] = [];
+    let articles: Article[] = [];
 
     results.forEach((result) => {
       if (result.status === "fulfilled") {
@@ -27,7 +34,20 @@ class NewsAggregatorService {
       }
     });
 
-    return this.deduplicateArticles(articles);
+    articles = this.deduplicateArticles(articles);
+
+    if (filters.categories && filters.categories.length > 0) {
+      articles = articles.filter((article) => {
+        if (!article.category) return false;
+
+        const lowerCategory = article.category.toLowerCase();
+        return filters.categories.some((category) =>
+          lowerCategory.includes(category.toLowerCase())
+        );
+      });
+    }
+
+    return articles;
   }
 
   private deduplicateArticles(articles: Article[]): Article[] {
@@ -52,7 +72,7 @@ class NewsAggregatorService {
 
       const { data } = await apiGuardian.get<GuardianApiResponse>(path);
 
-      return data.response.results.map((item: any) => ({
+      return data.response.results.map((item: GuardianFieldsResult) => ({
         id: item.id,
         title: item.webTitle,
         description: item.fields?.trailText || "",
@@ -86,18 +106,20 @@ class NewsAggregatorService {
 
       const { data } = await apiNewsApi.get<NewsApiResponse>(path);
 
-      return data.articles.map((item: any) => ({
-        id: item.url,
-        title: item.title,
-        description: item.description,
-        content: item.content,
-        author: item.author,
-        source: item.source.name,
-        publishedAt: item.publishedAt,
-        url: item.url,
-        imageUrl: item.urlToImage,
-        category: "general",
-      }));
+      return data.articles.map((item: NewsApiArticle) => {
+        return {
+          id: item.url,
+          title: item.title,
+          description: item.description,
+          content: item.content,
+          author: item.author,
+          source: item.source.name,
+          publishedAt: item.publishedAt,
+          url: item.url,
+          imageUrl: item.urlToImage,
+          category: "general",
+        };
+      });
     } catch (error) {
       console.error("Error fetching NewsAPI articles:", error);
       return [];
@@ -122,7 +144,7 @@ class NewsAggregatorService {
       const path = `/articlesearch.json?${queryParams.toString()}`;
       const { data } = await apiNyTimes.get<NyTimesResponse>(path);
 
-      return data.response.docs.map((item: any) => ({
+      return data.response.docs.map((item: NyTimesResponseDoc) => ({
         id: item._id,
         title: item.headline.main,
         description: item.abstract,

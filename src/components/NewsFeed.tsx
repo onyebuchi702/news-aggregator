@@ -9,8 +9,8 @@ import { FilterOptions } from "../types";
 
 const FIVE_MINUTES = 5 * 60 * 1000;
 
-const NewsFeed: React.FC = () => {
-  const initialState = {
+export const NewsFeed: React.FC = () => {
+  const initialState: FilterOptions = {
     keyword: "",
     dateFrom: "",
     dateTo: "",
@@ -18,6 +18,7 @@ const NewsFeed: React.FC = () => {
     sources: ["guardian", "newsapi", "nytimes"],
     authors: [],
   };
+
   const [filters, setFilters] = useState<FilterOptions>(initialState);
 
   const {
@@ -31,19 +32,12 @@ const NewsFeed: React.FC = () => {
     staleTime: FIVE_MINUTES,
     refetchOnWindowFocus: false,
   });
-  console.log("====================================");
-  console.log({
-    filters,
-    articles,
-    isLoading,
-    error,
-  });
-  console.log("====================================");
+
   const handleSearch = (query: string) => {
     setFilters((prev) => ({ ...prev, keyword: query }));
   };
 
-  const handleFilterChange = (newFilters: any) => {
+  const handleFilterChange = (newFilters: Partial<FilterOptions>) => {
     setFilters((prev) => ({
       ...prev,
       ...newFilters,
@@ -108,5 +102,3 @@ const NewsFeed: React.FC = () => {
     </div>
   );
 };
-
-export default NewsFeed;
