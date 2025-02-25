@@ -4,8 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { NewsCard } from "./NewsCard";
 import { SearchBar } from "./SearchBar";
 import { Filters } from "./Filters";
-import { newsService } from "@/services/news";
-import { FilterOptions } from "../types";
+import { newsService } from "@/services";
+import { FilterOptions } from "@//types";
 
 const FIVE_MINUTES = 5 * 60 * 1000;
 
