@@ -2,9 +2,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { FilterOptions, Article, AggregatorResponse } from "@/types";
+import { FIVE_MINUTES } from "../constants";
 import { apiAggregator } from "../api/api";
-
-const FIVE_MINUTES = 5 * 60 * 1000;
 
 export const useFetchNews = () => {
   const initialState: FilterOptions = {
@@ -13,11 +12,12 @@ export const useFetchNews = () => {
     dateTo: "",
     categories: [],
     sources: ["guardian", "newsapi", "nytimes"],
+    authors: [],
   };
 
   const [filters, setFilters] = useState<FilterOptions>(initialState);
 
-  const fetchNews = async (filters: FilterOptions): Promise<Article[]> => {
+  const fetchNews = async (): Promise<Article[]> => {
     try {
       const params = new URLSearchParams();
 
@@ -31,6 +31,10 @@ export const useFetchNews = () => {
 
       filters.sources.forEach((source) => {
         params.append("source", source);
+      });
+
+      filters.authors.forEach((author) => {
+        params.append("author", author);
       });
 
       const {
@@ -53,7 +57,7 @@ export const useFetchNews = () => {
     refetch,
   } = useQuery({
     queryKey: ["news", filters],
-    queryFn: () => fetchNews(filters),
+    queryFn: () => fetchNews(),
     staleTime: FIVE_MINUTES,
     refetchOnWindowFocus: false,
   });

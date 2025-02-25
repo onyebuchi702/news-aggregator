@@ -1,5 +1,11 @@
 import { Article, FilterOptions } from "../types";
-import { apiGuardian, apiNewsApi, apiNyTimes } from "../lib";
+import {
+  apiGuardian,
+  apiNewsApi,
+  apiNyTimes,
+  applyFilters,
+  FIVE_MINUTES,
+} from "../lib";
 import {
   GuardianApiResponse,
   NyTimesResponse,
@@ -8,6 +14,34 @@ import {
   NewsApiArticle,
   NyTimesResponseDoc,
 } from "@/types";
+
+let cachedAuthors: string[] | null = null;
+let cachedCategories: string[] | null = null;
+let cacheTimestamp: number | null = null;
+const CACHE_TTL = FIVE_MINUTES;
+
+const validNewsApiCategories = [
+  "business",
+  "entertainment",
+  "general",
+  "health",
+  "science",
+  "sports",
+  "technology",
+];
+
+const categoryMapping: Record<string, string> = {
+  Business: "business",
+  "US news": "general",
+  "World news": "general",
+  "UK news": "general",
+  Film: "entertainment",
+  Politics: "general",
+  Global: "general",
+  Sport: "sports",
+  Law: "general",
+  "Australia news": "general",
+};
 
 class NewsAggregatorService {
   async fetchAllNews(filters: FilterOptions): Promise<Article[]> {
@@ -36,16 +70,7 @@ class NewsAggregatorService {
 
     articles = this.deduplicateArticles(articles);
 
-    if (filters.categories && filters.categories.length > 0) {
-      articles = articles.filter((article) => {
-        if (!article.category) return false;
-
-        const lowerCategory = article.category.toLowerCase();
-        return filters.categories.some((category) =>
-          lowerCategory.includes(category.toLowerCase())
-        );
-      });
-    }
+    articles = applyFilters(articles, filters);
 
     return articles;
   }
@@ -97,12 +122,32 @@ class NewsAggregatorService {
       const queryParams = new URLSearchParams();
       if (filters.dateFrom) queryParams.append("from", filters.dateFrom);
       if (filters.dateTo) queryParams.append("to", filters.dateTo);
-      if (filters.categories.length)
-        queryParams.append("category", filters.categories[0]);
+
+      if (filters.categories.length) {
+        const category = filters.categories[0];
+        const mappedCategory = categoryMapping[category] || "general";
+
+        if (validNewsApiCategories.includes(mappedCategory)) {
+          queryParams.append("category", mappedCategory);
+        }
+      }
 
       queryParams.append("q", filters.keyword || "news");
 
-      const path = `/everything?${queryParams.toString()}&pageSize=50&language=en`;
+      let endpoint;
+      if (
+        filters.categories.length &&
+        validNewsApiCategories.includes(
+          categoryMapping[filters.categories[0]] || ""
+        )
+      ) {
+        endpoint = "/top-headlines";
+        queryParams.append("country", "us");
+      } else {
+        endpoint = "/everything";
+      }
+
+      const path = `${endpoint}?${queryParams.toString()}&pageSize=50&language=en`;
 
       const { data } = await apiNewsApi.get<NewsApiResponse>(path);
 
@@ -162,6 +207,68 @@ class NewsAggregatorService {
       console.error("Error fetching NYT news:", error);
       return [];
     }
+  }
+
+  async getUniqueAuthors(): Promise<string[]> {
+    if (
+      cachedAuthors &&
+      cacheTimestamp &&
+      Date.now() - cacheTimestamp < CACHE_TTL
+    ) {
+      return cachedAuthors;
+    }
+
+    const articles = await this.fetchGuardianNews({
+      keyword: "",
+      dateFrom: "",
+      dateTo: "",
+      categories: [],
+      sources: ["guardian"],
+      authors: [],
+    });
+
+    const uniqueAuthors = new Set<string>();
+    articles.forEach((article) => {
+      if (article.author && article.author.trim()) {
+        uniqueAuthors.add(article.author);
+      }
+    });
+
+    cachedAuthors = Array.from(uniqueAuthors).slice(0, 10);
+    if (!cacheTimestamp) cacheTimestamp = Date.now();
+
+    return cachedAuthors;
+  }
+
+  async getUniqueCategories(): Promise<string[]> {
+    if (
+      cachedCategories &&
+      cacheTimestamp &&
+      Date.now() - cacheTimestamp < CACHE_TTL
+    ) {
+      return cachedCategories;
+    }
+
+    const articles = await this.fetchGuardianNews({
+      keyword: "",
+      dateFrom: "",
+      dateTo: "",
+      categories: [],
+      sources: ["guardian"],
+      authors: [],
+    });
+
+    const uniqueCategories = new Set<string>();
+    articles.forEach((article) => {
+      if (article.category && article.category.trim()) {
+        uniqueCategories.add(article.category);
+      }
+    });
+
+    cachedCategories = Array.from(uniqueCategories).slice(0, 10);
+    if (!cacheTimestamp) cacheTimestamp = Date.now();
+
+    return cachedCategories;
   }
 }
 

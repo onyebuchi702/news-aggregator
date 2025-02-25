@@ -1,25 +1,25 @@
 import { newsService } from "@/services";
 import { NextRequest, NextResponse } from "next/server";
 import { FilterOptions } from "@/types";
-import { rateLimit } from "@/lib";
-
-const ONE_MINUTE = 60 * 1000;
+import {
+  rateLimit,
+  ONE_MINUTE,
+  USERS_PER_INTERVAL,
+  ARTICLES_REQUESTS_PER_MINUTE,
+} from "@/lib";
 
 const limiter = rateLimit({
   interval: ONE_MINUTE,
-  uniqueTokenPerInterval: 500,
+  uniqueTokenPerInterval: USERS_PER_INTERVAL,
 });
 
 export async function GET(request: NextRequest) {
   try {
-    const ip = request.headers.get("x-forwarded-for") || "anonymous";
-    console.log("====================================");
-    console.log({
-      ip,
-    });
-    console.log("====================================");
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const ip = forwardedFor ? forwardedFor.split(",")[0] : "anonymous";
+
     try {
-      await limiter.check(ip, 10);
+      await limiter.check(ip, ARTICLES_REQUESTS_PER_MINUTE);
     } catch (error) {
       return NextResponse.json(
         { error: "Rate limit exceeded. Try again later." },

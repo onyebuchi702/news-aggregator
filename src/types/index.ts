@@ -29,3 +29,4 @@ export interface AggregatorResponse {
 export * from "./guardian";
 export * from "./news";
 export * from "./nytimes";
+export * from "./filterOption";

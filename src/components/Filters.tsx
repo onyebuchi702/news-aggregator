@@ -1,17 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import { Select } from "./ui";
 import { FilterOptions } from "@/types";
+import { useFetchFilterOptions } from "@/lib";
 
 interface FiltersProps {
   onFilterChange: (filters: Partial<FilterOptions>) => void;
 }
 
 export const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
-  const [localFilters, setLocalFilters] = useState({
-    category: "",
-    source: "",
-    date: "",
-  });
+  const { setLocalFilters, localFilters, filterOptions, isLoading, error } =
+    useFetchFilterOptions();
 
   const handleChange = (name: string, value: string) => {
     const newLocalFilters = { ...localFilters, [name]: value };
@@ -29,6 +27,12 @@ export const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
       mappedFilters.sources = [newLocalFilters.source];
     } else {
       mappedFilters.sources = ["guardian", "newsapi", "nytimes"];
+    }
+
+    if (newLocalFilters.author) {
+      mappedFilters.authors = [newLocalFilters.author];
+    } else {
+      mappedFilters.authors = [];
     }
 
     if (newLocalFilters.date) {
@@ -54,18 +58,30 @@ export const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
     onFilterChange(mappedFilters);
   };
 
+  const categoryOptions = [
+    { value: "", label: "All Categories" },
+    ...(filterOptions?.categories?.map((category) => ({
+      value: category,
+      label: category.charAt(0).toUpperCase() + category.slice(1),
+    })) || []),
+  ];
+
+  const authorOptions = [
+    { value: "", label: "All Authors" },
+    ...(filterOptions?.authors?.map((author) => ({
+      value: author,
+      label: author,
+    })) || []),
+  ];
+
   return (
     <div className="flex flex-wrap gap-4 p-4 bg-white rounded-lg shadow-sm">
       <Select
         label="Category"
-        options={[
-          { value: "", label: "All Categories" },
-          { value: "technology", label: "Technology" },
-          { value: "business", label: "Business" },
-          { value: "sports", label: "Sports" },
-        ]}
+        options={categoryOptions}
         value={localFilters.category}
         onChange={(e) => handleChange("category", e.target.value)}
+        disabled={isLoading}
       />
       <Select
         label="Source"
@@ -89,6 +105,17 @@ export const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
         value={localFilters.date}
         onChange={(e) => handleChange("date", e.target.value)}
       />
+      <Select
+        label="Author"
+        options={authorOptions}
+        value={localFilters.author}
+        onChange={(e) => handleChange("author", e.target.value)}
+        disabled={isLoading}
+      />
+
+      {error && (
+        <div className="w-full text-sm text-red-500">{error.message}</div>
+      )}
     </div>
   );
 };
