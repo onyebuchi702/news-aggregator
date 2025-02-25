@@ -14,6 +14,8 @@ export const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
           src={article.imageUrl}
           alt={article.title}
           className="w-full h-48 object-cover"
+          width={100}
+          height={100}
         />
       )}
       <div className="p-4">

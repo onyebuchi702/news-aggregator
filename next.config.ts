@@ -5,21 +5,10 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: "http",
-        hostname: "media.guim.co.uk",
-        port: "",
-        pathname: "/**",
-      },
-      {
         protocol: "https",
-        hostname: "media.guim.co.uk",
-        port: "",
-        pathname: "/**",
+        hostname: "**",
       },
     ],
-  },
-  experimental: {
-    serverComponentsExternalPackages: [],
   },
 };
 
