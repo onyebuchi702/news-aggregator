@@ -67,7 +67,7 @@ download and install docker desktop: [https://docs.docker.com/desktop/setup/inst
 npm run build
 brew install docker-compose
 docker-compose up --build
-
+OR
 if issues try:
 docker-compose down
 docker-compose build --no-cache
