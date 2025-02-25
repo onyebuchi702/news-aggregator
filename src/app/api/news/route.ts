@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     try {
       await limiter.check(ip, ARTICLES_REQUESTS_PER_MINUTE);
     } catch (error) {
+      console.error("Rate limit error:", error);
       return NextResponse.json(
         { error: "Rate limit exceeded. Try again later." },
         { status: 429 }
