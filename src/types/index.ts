@@ -17,6 +17,7 @@ export interface FilterOptions {
   dateTo: string;
   categories: string[];
   sources: string[];
+  authors: string[];
 }
 
 export interface AggregatorResponse {
