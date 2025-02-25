@@ -16,13 +16,16 @@ ARG NYT_API_KEY
 ARG GUARDIAN_API_URL
 ARG NEWS_API_URL
 ARG NYT_API_URL
+ARG NYT_API_SECRET
 ARG NEXT_PUBLIC_BASE_API_URL
+
 ENV GUARDIAN_API_KEY=$GUARDIAN_API_KEY
 ENV NEWS_API_KEY=$NEWS_API_KEY
 ENV NYT_API_KEY=$NYT_API_KEY
 ENV GUARDIAN_API_URL=$GUARDIAN_API_URL
 ENV NEWS_API_URL=$NEWS_API_URL
 ENV NYT_API_URL=$NYT_API_URL
+ENV NYT_API_SECRET=$NYT_API_SECRET
 ENV NEXT_PUBLIC_BASE_API_URL=$NEXT_PUBLIC_BASE_API_URL
 
 RUN npm run build
@@ -36,6 +39,10 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
+
+RUN mkdir -p ./.next/standalone
+RUN mkdir -p ./.next/static
+
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 

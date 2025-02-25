@@ -63,8 +63,15 @@ npm run dev
 
 1. Build and run the Docker container:
 ```
+download and install docker desktop: https://docs.docker.com/desktop/setup/install/mac-install/
+npm run build
 brew install docker-compose
 docker-compose up --build
+
+if issues try:
+docker-compose down
+docker-compose build --no-cache
+docker-compose up
 ```
 
 2. Access the application at [http://localhost:3001](http://localhost:3001)
