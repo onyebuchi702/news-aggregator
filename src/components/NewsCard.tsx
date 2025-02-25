@@ -1,5 +1,6 @@
 import React from "react";
 import { Article } from "@/types";
+import Image from "next/image";
 
 interface NewsCardProps {
   article: Article;
@@ -9,7 +10,7 @@ export const NewsCard: React.FC<NewsCardProps> = ({ article }) => {
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
       {article.imageUrl && (
-        <img
+        <Image
           src={article.imageUrl}
           alt={article.title}
           className="w-full h-48 object-cover"

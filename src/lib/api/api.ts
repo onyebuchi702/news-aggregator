@@ -11,7 +11,7 @@ interface IApi {
   [ApiRequestMethod.GET]: <T>(path: string) => Promise<T>;
   [ApiRequestMethod.POST]: <T>(
     path: string,
-    data: Record<string, any>
+    data: Record<string, string | number | { [key: string]: string }>
   ) => Promise<T>;
   [ApiRequestMethod.PATCH]: <T>(path: string) => Promise<T>;
   [ApiRequestMethod.DELETE]: <T>(path: string) => Promise<T>;
@@ -28,7 +28,10 @@ class ApiService implements IApi {
     return await this.httpService.get(path);
   }
 
-  public async post<T>(path: string, data: Record<string, any>): Promise<T> {
+  public async post<T>(
+    path: string,
+    data: Record<string, string | number | { [key: string]: string }>
+  ): Promise<T> {
     return await this.httpService.post(path, data);
   }
 

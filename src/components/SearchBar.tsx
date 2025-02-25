@@ -1,6 +1,5 @@
 import React from "react";
-import { Input } from "./ui/Input";
-import { Button } from "./ui/Button";
+import { Input, Button } from "./ui";
 
 interface SearchBarProps {
   onSearch: (query: string) => void;

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Select } from "./ui/Select";
+import { Select } from "./ui";
 import { FilterOptions } from "@/types";
 
 interface FiltersProps {
