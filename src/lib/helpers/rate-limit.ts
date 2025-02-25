@@ -39,9 +39,15 @@ const limiter = rateLimit({
   uniqueTokenPerInterval: USERS_PER_INTERVAL,
 });
 
-export const handleNewsRateLimit = async (request: NextRequest) => {
+const getIpAddress = (request: NextRequest) => {
   const forwardedFor = request.headers.get("x-forwarded-for");
   const ip = forwardedFor ? forwardedFor.split(",")[0] : "anonymous";
+
+  return ip;
+};
+
+export const handleNewsRateLimit = async (request: NextRequest) => {
+  const ip = getIpAddress(request);
 
   try {
     await limiter.check(ip, ARTICLES_REQUESTS_PER_MINUTE);
@@ -55,8 +61,7 @@ export const handleNewsRateLimit = async (request: NextRequest) => {
 };
 
 export const handleFilterOptionsRateLimit = async (request: NextRequest) => {
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  const ip = forwardedFor ? forwardedFor.split(",")[0] : "anonymous";
+  const ip = getIpAddress(request);
 
   try {
     await limiter.check(`${ip}-metadata`, METADATA_REQUESTS_PER_MINUTE);

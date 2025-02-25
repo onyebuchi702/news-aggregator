@@ -1,8 +1,10 @@
 import { newsService } from "@/services";
 import { NextRequest, NextResponse } from "next/server";
+import { handleFilterOptionsRateLimit } from "@/lib";
 
 export async function GET(request: NextRequest) {
   try {
+    await handleFilterOptionsRateLimit(request);
     const searchParams = request.nextUrl.searchParams;
     const source = searchParams.get("source") || "";
 
