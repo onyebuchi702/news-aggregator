@@ -1,4 +1,11 @@
 import { LRUCache } from "lru-cache";
+import { NextRequest, NextResponse } from "next/server";
+import {
+  ARTICLES_REQUESTS_PER_MINUTE,
+  ONE_MINUTE,
+  USERS_PER_INTERVAL,
+  METADATA_REQUESTS_PER_MINUTE,
+} from "../constants";
 
 type Options = {
   interval: number;
@@ -25,4 +32,39 @@ export const rateLimit = (options: Options) => {
         resolve();
       }),
   };
+};
+
+const limiter = rateLimit({
+  interval: ONE_MINUTE,
+  uniqueTokenPerInterval: USERS_PER_INTERVAL,
+});
+
+export const handleNewsRateLimit = async (request: NextRequest) => {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const ip = forwardedFor ? forwardedFor.split(",")[0] : "anonymous";
+
+  try {
+    await limiter.check(ip, ARTICLES_REQUESTS_PER_MINUTE);
+  } catch (error) {
+    console.error("Rate limit error:", error);
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Try again later." },
+      { status: 429 }
+    );
+  }
+};
+
+export const handleFilterOptionsRateLimit = async (request: NextRequest) => {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const ip = forwardedFor ? forwardedFor.split(",")[0] : "anonymous";
+
+  try {
+    await limiter.check(`${ip}-metadata`, METADATA_REQUESTS_PER_MINUTE);
+  } catch (error) {
+    console.error("Rate limit error:", error);
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Try again later." },
+      { status: 429 }
+    );
+  }
 };

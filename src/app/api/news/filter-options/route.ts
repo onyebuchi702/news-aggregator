@@ -1,35 +1,14 @@
 import { newsService } from "@/services";
 import { NextRequest, NextResponse } from "next/server";
-import {
-  rateLimit,
-  ONE_MINUTE,
-  USERS_PER_INTERVAL,
-  METADATA_REQUESTS_PER_MINUTE,
-} from "@/lib";
-
-const limiter = rateLimit({
-  interval: ONE_MINUTE,
-  uniqueTokenPerInterval: USERS_PER_INTERVAL,
-});
 
 export async function GET(request: NextRequest) {
   try {
-    const forwardedFor = request.headers.get("x-forwarded-for");
-    const ip = forwardedFor ? forwardedFor.split(",")[0] : "anonymous";
-
-    try {
-      await limiter.check(`${ip}-metadata`, METADATA_REQUESTS_PER_MINUTE);
-    } catch (error) {
-      console.error("Rate limit error:", error);
-      return NextResponse.json(
-        { error: "Rate limit exceeded. Try again later." },
-        { status: 429 }
-      );
-    }
+    const searchParams = request.nextUrl.searchParams;
+    const source = searchParams.get("source") || "";
 
     const [authors, categories] = await Promise.all([
-      newsService.getUniqueAuthors(),
-      newsService.getUniqueCategories(),
+      newsService.getUniqueAuthors(source || undefined),
+      newsService.getUniqueCategories(source || undefined),
     ]);
 
     return NextResponse.json(

@@ -8,44 +8,60 @@ interface FiltersProps {
 }
 
 export const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
-  const { setLocalFilters, localFilters, filterOptions, isLoading, error } =
-    useFetchFilterOptions();
+  const {
+    setLocalFilters,
+    localFilters,
+    filterOptions,
+    isLoading,
+    error,
+    fetchSourceSpecificOptions,
+  } = useFetchFilterOptions();
 
   const handleChange = (name: string, value: string) => {
-    const newLocalFilters = { ...localFilters, [name]: value };
-    setLocalFilters(newLocalFilters);
+    if (name === "source") {
+      fetchSourceSpecificOptions(value);
+    } else {
+      setLocalFilters({ ...localFilters, [name]: value });
+    }
 
     const mappedFilters: Partial<FilterOptions> = {};
 
-    if (newLocalFilters.category) {
-      mappedFilters.categories = [newLocalFilters.category];
+    const updatedFilters =
+      name === "category"
+        ? { ...localFilters, category: value }
+        : name === "source"
+        ? { ...localFilters, source: value, category: "" }
+        : { ...localFilters, [name]: value };
+
+    if (updatedFilters.category) {
+      mappedFilters.categories = [updatedFilters.category];
     } else {
       mappedFilters.categories = [];
     }
 
-    if (newLocalFilters.source) {
-      mappedFilters.sources = [newLocalFilters.source];
+    if (updatedFilters.source) {
+      mappedFilters.sources = [updatedFilters.source];
     } else {
       mappedFilters.sources = ["guardian", "newsapi", "nytimes"];
     }
 
-    if (newLocalFilters.author) {
-      mappedFilters.authors = [newLocalFilters.author];
+    if (updatedFilters.author) {
+      mappedFilters.authors = [updatedFilters.author];
     } else {
       mappedFilters.authors = [];
     }
 
-    if (newLocalFilters.date) {
+    if (updatedFilters.date) {
       const today = new Date();
       mappedFilters.dateTo = today.toISOString().split("T")[0];
 
-      if (newLocalFilters.date === "today") {
+      if (updatedFilters.date === "today") {
         mappedFilters.dateFrom = today.toISOString().split("T")[0];
-      } else if (newLocalFilters.date === "week") {
+      } else if (updatedFilters.date === "week") {
         const weekAgo = new Date(today);
         weekAgo.setDate(today.getDate() - 7);
         mappedFilters.dateFrom = weekAgo.toISOString().split("T")[0];
-      } else if (newLocalFilters.date === "month") {
+      } else if (updatedFilters.date === "month") {
         const monthAgo = new Date(today);
         monthAgo.setMonth(today.getMonth() - 1);
         mappedFilters.dateFrom = monthAgo.toISOString().split("T")[0];
@@ -77,13 +93,6 @@ export const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
   return (
     <div className="flex flex-wrap gap-4 p-4 bg-white rounded-lg shadow-sm">
       <Select
-        label="Category"
-        options={categoryOptions}
-        value={localFilters.category}
-        onChange={(e) => handleChange("category", e.target.value)}
-        disabled={isLoading}
-      />
-      <Select
         label="Source"
         options={[
           { value: "", label: "All Sources" },
@@ -94,6 +103,15 @@ export const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
         value={localFilters.source}
         onChange={(e) => handleChange("source", e.target.value)}
       />
+
+      <Select
+        label="Category"
+        options={categoryOptions}
+        value={localFilters.category}
+        onChange={(e) => handleChange("category", e.target.value)}
+        disabled={isLoading}
+      />
+
       <Select
         label="Date"
         options={[
@@ -105,6 +123,7 @@ export const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
         value={localFilters.date}
         onChange={(e) => handleChange("date", e.target.value)}
       />
+
       <Select
         label="Author"
         options={authorOptions}
@@ -114,7 +133,9 @@ export const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
       />
 
       {error && (
-        <div className="w-full text-sm text-red-500">{error.message}</div>
+        <div className="w-full text-sm text-red-500">
+          {(error as Error).message || "An error occurred with filter options"}
+        </div>
       )}
     </div>
   );

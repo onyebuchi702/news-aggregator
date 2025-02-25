@@ -15,8 +15,8 @@ import {
   NyTimesResponseDoc,
 } from "@/types";
 
-let cachedAuthors: string[] | null = null;
-let cachedCategories: string[] | null = null;
+let cachedAuthors: Record<string, string[]> = {};
+let cachedCategories: Record<string, string[]> = {};
 let cacheTimestamp: number | null = null;
 const CACHE_TTL = FIVE_MINUTES;
 
@@ -41,6 +41,8 @@ const categoryMapping: Record<string, string> = {
   Sport: "sports",
   Law: "general",
   "Australia news": "general",
+  Music: "entertainment",
+  "Television & radio": "entertainment",
 };
 
 class NewsAggregatorService {
@@ -52,7 +54,21 @@ class NewsAggregatorService {
     }
 
     if (filters.sources.length === 0 || filters.sources.includes("newsapi")) {
-      promises.push(this.fetchNewsApiArticles(filters));
+      const newsApiFilters = { ...filters };
+
+      if (newsApiFilters.categories.length) {
+        newsApiFilters.categories = newsApiFilters.categories
+          .map((category) => {
+            return categoryMapping[category] || "general";
+          })
+          .filter((category) => validNewsApiCategories.includes(category));
+
+        if (newsApiFilters.categories.length === 0) {
+          newsApiFilters.categories = ["general"];
+        }
+      }
+
+      promises.push(this.fetchNewsApiArticles(newsApiFilters));
     }
 
     if (filters.sources.length === 0 || filters.sources.includes("nytimes")) {
@@ -123,28 +139,25 @@ class NewsAggregatorService {
       if (filters.dateFrom) queryParams.append("from", filters.dateFrom);
       if (filters.dateTo) queryParams.append("to", filters.dateTo);
 
+      let selectedCategory = "general";
       if (filters.categories.length) {
-        const category = filters.categories[0];
-        const mappedCategory = categoryMapping[category] || "general";
-
-        if (validNewsApiCategories.includes(mappedCategory)) {
-          queryParams.append("category", mappedCategory);
+        for (const category of filters.categories) {
+          const mappedCategory = categoryMapping[category] || category;
+          if (validNewsApiCategories.includes(mappedCategory)) {
+            selectedCategory = mappedCategory;
+            break;
+          }
         }
       }
 
       queryParams.append("q", filters.keyword || "news");
 
-      let endpoint;
-      if (
-        filters.categories.length &&
-        validNewsApiCategories.includes(
-          categoryMapping[filters.categories[0]] || ""
-        )
-      ) {
+      let endpoint = "/everything";
+
+      if (validNewsApiCategories.includes(selectedCategory)) {
         endpoint = "/top-headlines";
+        queryParams.append("category", selectedCategory);
         queryParams.append("country", "us");
-      } else {
-        endpoint = "/everything";
       }
 
       const path = `${endpoint}?${queryParams.toString()}&pageSize=50&language=en`;
@@ -162,7 +175,7 @@ class NewsAggregatorService {
           publishedAt: item.publishedAt,
           url: item.url,
           imageUrl: item.urlToImage,
-          category: "general",
+          category: selectedCategory,
         };
       });
     } catch (error) {
@@ -209,23 +222,27 @@ class NewsAggregatorService {
     }
   }
 
-  async getUniqueAuthors(): Promise<string[]> {
+  async getUniqueAuthors(source?: string): Promise<string[]> {
+    const cacheKey = source || "all";
+
     if (
-      cachedAuthors &&
+      cachedAuthors[cacheKey] &&
       cacheTimestamp &&
       Date.now() - cacheTimestamp < CACHE_TTL
     ) {
-      return cachedAuthors;
+      return cachedAuthors[cacheKey];
     }
 
-    const articles = await this.fetchGuardianNews({
+    const filters: FilterOptions = {
       keyword: "",
       dateFrom: "",
       dateTo: "",
       categories: [],
-      sources: ["guardian"],
+      sources: source ? [source] : [],
       authors: [],
-    });
+    };
+
+    const articles = await this.fetchAllNews(filters);
 
     const uniqueAuthors = new Set<string>();
     articles.forEach((article) => {
@@ -234,29 +251,41 @@ class NewsAggregatorService {
       }
     });
 
-    cachedAuthors = Array.from(uniqueAuthors).slice(0, 10);
+    cachedAuthors[cacheKey] = Array.from(uniqueAuthors).slice(0, 10);
     if (!cacheTimestamp) cacheTimestamp = Date.now();
 
-    return cachedAuthors;
+    return cachedAuthors[cacheKey];
   }
 
-  async getUniqueCategories(): Promise<string[]> {
+  async getUniqueCategories(source?: string): Promise<string[]> {
+    const cacheKey = source || "all";
+
     if (
-      cachedCategories &&
+      cachedCategories[cacheKey] &&
       cacheTimestamp &&
       Date.now() - cacheTimestamp < CACHE_TTL
     ) {
-      return cachedCategories;
+      return cachedCategories[cacheKey];
     }
 
-    const articles = await this.fetchGuardianNews({
+    if (source === "newsapi") {
+      cachedCategories[cacheKey] = validNewsApiCategories.map(
+        (category) => category.charAt(0).toUpperCase() + category.slice(1)
+      );
+      if (!cacheTimestamp) cacheTimestamp = Date.now();
+      return cachedCategories[cacheKey];
+    }
+
+    const filters: FilterOptions = {
       keyword: "",
       dateFrom: "",
       dateTo: "",
       categories: [],
-      sources: ["guardian"],
+      sources: source ? [source] : [],
       authors: [],
-    });
+    };
+
+    const articles = await this.fetchAllNews(filters);
 
     const uniqueCategories = new Set<string>();
     articles.forEach((article) => {
@@ -265,10 +294,10 @@ class NewsAggregatorService {
       }
     });
 
-    cachedCategories = Array.from(uniqueCategories).slice(0, 10);
+    cachedCategories[cacheKey] = Array.from(uniqueCategories).slice(0, 10);
     if (!cacheTimestamp) cacheTimestamp = Date.now();
 
-    return cachedCategories;
+    return cachedCategories[cacheKey];
   }
 }
 
