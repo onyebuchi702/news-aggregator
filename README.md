@@ -42,13 +42,14 @@ npm install
 
 3. Create a `.env.local` file in the root directory with your API keys:
 ```
-NEXT_PUBLIC_GUARDIAN_API_KEY=ask-a-developer
-NEXT_PUBLIC_GUARDIAN_API_URL=https://content.guardianapis.com/
-NEXT_PUBLIC_NEWS_API_KEY=ask-a-developer
-NEXT_PUBLIC_NEWS_API_URL=https://newsapi.org/v2/
-NEXT_PUBLIC_NYT_API_KEY=ask-a-developer
-NEXT_PUBLIC_NYT_API_SECRET=ask-a-developer
-NEXT_PUBLIC_NYT_API_URL=https://api.nytimes.com/svc/search/v2/
+GUARDIAN_API_KEY=ask-a-developer
+GUARDIAN_API_URL=https://content.guardianapis.com/
+NEWS_API_KEY=ask-a-developer
+NEWS_API_URL=https://newsapi.org/v2/
+NYT_API_KEY=ask-a-developer
+NYT_API_SECRET=ask-a-developer
+NYT_API_URL=https://api.nytimes.com/svc/search/v2/
+NEXT_PUBLIC_BASE_API_URL=http://localhost:3001
 ```
 
 4. Run the development server:
@@ -62,6 +63,7 @@ npm run dev
 
 1. Build and run the Docker container:
 ```
+brew install docker-compose
 docker-compose up --build
 ```
 
@@ -75,7 +77,7 @@ news-aggregator/
 │   ├── app/               # Next.js app router
 │   ├── components/        # React components
 │   │   ├── ui/            # UI components
-│   ├── lib/               # enums & api configs
+│   ├── lib/               # enums, api configs & hooks
 │   ├── services/          # API services
 │   │   ├── api/           # API configuration
 │   └── types/             # TypeScript type definitions
