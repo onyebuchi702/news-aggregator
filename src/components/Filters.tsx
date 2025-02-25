@@ -1,22 +1,57 @@
-import React from "react";
+import React, { useState } from "react";
 import { Select } from "./ui/Select";
 import { FilterOptions } from "@/types";
 
 interface FiltersProps {
-  onFilterChange: (filters: FilterOptions) => void;
+  onFilterChange: (filters: Partial<FilterOptions>) => void;
 }
 
 export const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
-  const [filters, setFilters] = React.useState({
+  const [localFilters, setLocalFilters] = useState({
     category: "",
     source: "",
     date: "",
   });
 
   const handleChange = (name: string, value: string) => {
-    const newFilters = { ...filters, [name]: value };
-    setFilters(newFilters);
-    onFilterChange(newFilters);
+    const newLocalFilters = { ...localFilters, [name]: value };
+    setLocalFilters(newLocalFilters);
+
+    const mappedFilters: Partial<FilterOptions> = {};
+
+    if (newLocalFilters.category) {
+      mappedFilters.categories = [newLocalFilters.category];
+    } else {
+      mappedFilters.categories = [];
+    }
+
+    if (newLocalFilters.source) {
+      mappedFilters.sources = [newLocalFilters.source];
+    } else {
+      mappedFilters.sources = ["guardian", "newsapi", "nytimes"];
+    }
+
+    if (newLocalFilters.date) {
+      const today = new Date();
+      mappedFilters.dateTo = today.toISOString().split("T")[0];
+
+      if (newLocalFilters.date === "today") {
+        mappedFilters.dateFrom = today.toISOString().split("T")[0];
+      } else if (newLocalFilters.date === "week") {
+        const weekAgo = new Date(today);
+        weekAgo.setDate(today.getDate() - 7);
+        mappedFilters.dateFrom = weekAgo.toISOString().split("T")[0];
+      } else if (newLocalFilters.date === "month") {
+        const monthAgo = new Date(today);
+        monthAgo.setMonth(today.getMonth() - 1);
+        mappedFilters.dateFrom = monthAgo.toISOString().split("T")[0];
+      }
+    } else {
+      mappedFilters.dateFrom = "";
+      mappedFilters.dateTo = "";
+    }
+
+    onFilterChange(mappedFilters);
   };
 
   return (
@@ -29,7 +64,7 @@ export const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
           { value: "business", label: "Business" },
           { value: "sports", label: "Sports" },
         ]}
-        value={filters.category}
+        value={localFilters.category}
         onChange={(e) => handleChange("category", e.target.value)}
       />
       <Select
@@ -40,7 +75,7 @@ export const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
           { value: "nytimes", label: "New York Times" },
           { value: "newsapi", label: "News API" },
         ]}
-        value={filters.source}
+        value={localFilters.source}
         onChange={(e) => handleChange("source", e.target.value)}
       />
       <Select
@@ -51,7 +86,7 @@ export const Filters: React.FC<FiltersProps> = ({ onFilterChange }) => {
           { value: "week", label: "This Week" },
           { value: "month", label: "This Month" },
         ]}
-        value={filters.date}
+        value={localFilters.date}
         onChange={(e) => handleChange("date", e.target.value)}
       />
     </div>

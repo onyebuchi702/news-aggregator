@@ -1,5 +1,5 @@
 import { Article, FilterOptions } from "../types";
-import { apiGuardian, apiNewsApi, apiNyTimes } from "./api/api";
+import { apiGuardian, apiNewsApi, apiNyTimes } from "../lib";
 import {
   GuardianApiResponse,
   NyTimesResponse,
